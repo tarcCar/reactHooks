@@ -1,26 +1,83 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
 
-function App() {
+export default function App() {
+  const [respositories, setRespositories] = useState([]);
+  const [location, setLocation] = useState([]);
+
+  function newRepoHandler() {
+    setRespositories([
+      ...respositories,
+      { id: Math.random(), name: "Novo repo" }
+    ]);
+  }
+
+  useEffect(() => {
+    async function listarRepositorios() {
+      const response = await fetch("http://api.github.com/users/tarcCar/repos");
+      const data = await response.json();
+      setRespositories(data);
+    }
+    listarRepositorios();
+    const watchId = navigator.geolocation.watchPosition(positionChangeHandler);
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  useEffect(() => {
+    const favoritos = respositories.filter(repo => repo.favorite);
+    document.title = `Você tem ${favoritos.length} favoritos`;
+  }, [respositories]);
+
+  function handleFavorite(id) {
+    const newRepositories = respositories.map(repo => {
+      return repo.id === id ? { ...repo, favorite: !repo.favorite } : repo;
+    });
+    setRespositories(newRepositories);
+  }
+  function positionChangeHandler({ coords }) {
+    const { latitude, longitude } = coords;
+    setLocation({ latitude, longitude });
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <div>
+        Latitude: {location.latitude} <br />
+        Longitude: {location.longitude}
+      </div>
+      <br />
+      <ul>
+        {respositories.map(repo => (
+          <li key={repo.id}>
+            {repo.name}
+            {repo.favorite && <span>(Favorito)</span>}
+            <button onClick={() => handleFavorite(repo.id)}>Favoritar</button>
+          </li>
+        ))}
+      </ul>
+      <button onClick={newRepoHandler}>Adicionar repo</button>
+    </>
   );
 }
-
-export default App;
+// export default function App() {
+//   const [respositories, setRespositories] = useState([
+//     { id: 1, name: "Repo 1" },
+//     { id: 2, name: "Repo 2" },
+//     { id: 3, name: "Repo 3" }
+//   ]);
+//   function newRepoHandler() {
+//     setRespositories([
+//       ...respositories,
+//       { id: Math.random(), name: "Novo repo" }
+//     ]);
+//   }
+//   return (
+//     <>
+//       <ul>
+//         {respositories.map(repo => (
+//           <li key={repo.id}>{repo.name}</li>
+//         ))}
+//       </ul>
+//       <button onClick={newRepoHandler}>Adicionar repo</button>
+//     </>
+//   );
+// }
